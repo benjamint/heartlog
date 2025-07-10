@@ -484,7 +484,19 @@ export default function DashboardPage() {
                   />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-semibold text-gray-900">{profile?.name || "Add Partner Details"}</h2>
+                  {profile?.display_nickname && profile?.nickname ? (
+                    <>
+                      <h2 className="text-2xl font-bold text-gray-900">{profile.nickname}</h2>
+                      <span className="text-sm text-gray-500 ml-2">{profile.name}</span>
+                    </>
+                  ) : (
+                    <>
+                      <h2 className="text-2xl font-semibold text-gray-900">{profile?.name || "Add Partner Details"}</h2>
+                      {profile?.nickname && (
+                        <span className="text-sm text-gray-500 ml-2">{profile.nickname}</span>
+                      )}
+                    </>
+                  )}
                   <p className="text-gray-600 mt-1">{profile?.notes || "Click 'Edit Profile' to get started"}</p>
                 </div>
               </div>
@@ -538,6 +550,25 @@ export default function DashboardPage() {
                       />
                     </div>
                     <div>
+                      <Label htmlFor="nickname">Nickname</Label>
+                      <Input
+                        id="nickname"
+                        value={profile?.nickname || ""}
+                        onChange={(e) => setProfile(prev => prev ? { ...prev, nickname: e.target.value } : { nickname: e.target.value, name: "", id: "", user_id: "", created_at: "", updated_at: "" })}
+                        placeholder="e.g. Honey, Babe, etc."
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="display_nickname"
+                        type="checkbox"
+                        checked={!!profile?.display_nickname}
+                        onChange={e => setProfile(prev => prev ? { ...prev, display_nickname: e.target.checked } : { display_nickname: e.target.checked, name: "", id: "", user_id: "", created_at: "", updated_at: "" })}
+                        className="accent-pink-500"
+                      />
+                      <Label htmlFor="display_nickname">Display nickname instead</Label>
+                    </div>
+                    <div>
                       <Label htmlFor="birthday">Birthday</Label>
                       <Input
                         id="birthday"
@@ -571,6 +602,8 @@ export default function DashboardPage() {
                           birthday: profile?.birthday || undefined,
                           anniversary: profile?.anniversary || undefined,
                           notes: profile?.notes || "",
+                          nickname: profile?.nickname || undefined,
+                          display_nickname: !!profile?.display_nickname,
                           photo_url: profile?.photo_url || undefined
                         }
                         saveProfile(profileData)

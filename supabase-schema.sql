@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS spouse_profiles (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
+  nickname TEXT,
+  display_nickname BOOLEAN DEFAULT false,
   photo_url TEXT,
   birthday DATE,
   anniversary DATE,
@@ -113,4 +115,4 @@ CREATE TRIGGER update_custom_fields_updated_at BEFORE UPDATE ON custom_fields
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_reminders_updated_at BEFORE UPDATE ON reminders
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column(); 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

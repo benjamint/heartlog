@@ -2,6 +2,8 @@ export interface SpouseProfile {
   id: string
   user_id: string
   name: string
+  nickname?: string
+  display_nickname?: boolean
   photo_url?: string
   birthday?: string
   anniversary?: string
@@ -67,4 +69,4 @@ export interface Database {
       }
     }
   }
-} 
+}

@@ -20,25 +20,59 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { supabase } from "@/lib/supabaseClient"
+
+
 import { downloadICS } from "@/lib/utils"
 
 interface Reminder {
-  id: string
-  user_id: string
-  profile_id: string
-  title: string
-  type: "birthday" | "anniversary" | "custom"
-  date: string
-  advance_notice_days: number
-  enabled: boolean
-  notes?: string
-  created_at: string
-  updated_at: string
+  id: string;
+  user_id: string;
+  profile_id: string;
+  title: string;
+  type: "birthday" | "anniversary" | "custom";
+  date: string;
+  advance_notice_days: number;
+  enabled: boolean;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export default function RemindersPage() {
   const { user } = useAuth()
   const [reminders, setReminders] = useState<Reminder[]>([])
+  // Fetch partner profile and check for birthday
+  const [partnerProfile, setPartnerProfile] = useState<any>(null)
+  const [partnerBirthday, setPartnerBirthday] = useState<string | null>(null)
+
+  // Fetch partner profile
+  const fetchPartnerProfile = async () => {
+    try {
+      const token = await getAuthToken()
+      if (!token) return
+
+      const response = await fetch('/api/spouse-profiles', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        const profile = result.data || result
+        setPartnerProfile(profile)
+        if (profile && profile.birthday) {
+          setPartnerBirthday(profile.birthday)
+        } else {
+          setPartnerBirthday(null)
+        }
+      } else {
+        setPartnerProfile(null)
+        setPartnerBirthday(null)
+      }
+    } catch (error) {
+      setPartnerProfile(null)
+      setPartnerBirthday(null)
+    }
+  }
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -90,6 +124,7 @@ export default function RemindersPage() {
   useEffect(() => {
     if (user) {
       fetchReminders()
+      fetchPartnerProfile()
     }
   }, [user])
 
@@ -247,6 +282,12 @@ export default function RemindersPage() {
   }
 
   const addQuickReminder = async (title: string, date: string, type: "birthday" | "anniversary" | "custom") => {
+    // Prevent adding duplicate reminders (by title, date, and type)
+    const alreadyExists = reminders.some(
+      (r) => r.title === title && r.date === date && r.type === type
+    )
+    if (alreadyExists) return
+
     setIsSaving(true)
     try {
       const token = await getAuthToken()
@@ -292,7 +333,7 @@ export default function RemindersPage() {
       if (response.ok) {
         const result = await response.json()
         setReminders([...reminders, result.data])
-        alert(`${title} reminder added successfully!`)
+        // Removed success alert
       } else {
         const errorData = await response.json()
         alert('Error creating reminder: ' + (errorData.error || 'Unknown error'))
@@ -558,11 +599,24 @@ export default function RemindersPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Partner's Birthday from profile if set */}
+              {partnerBirthday && (
+                <Button
+                  variant="outline"
+                  className="h-auto p-4 flex flex-col items-center gap-2 bg-transparent"
+                  onClick={() => addQuickReminder("Partner's Birthday", partnerBirthday, "birthday")}
+                  disabled={isSaving || reminders.some(r => r.title === "Partner's Birthday" && r.date === partnerBirthday && r.type === "birthday")}
+                >
+                  <Gift className="h-6 w-6 text-blue-500" />
+                  <span className="font-medium">Partner's Birthday</span>
+                  <span className="text-xs text-gray-500">{new Date(partnerBirthday).toLocaleDateString()}</span>
+                </Button>
+              )}
               <Button 
                 variant="outline" 
                 className="h-auto p-4 flex flex-col items-center gap-2 bg-transparent"
                 onClick={() => addQuickReminder("Valentine's Day", "2025-02-14", "custom")}
-                disabled={isSaving}
+                disabled={isSaving || reminders.some(r => r.title === "Valentine's Day" && r.date === "2025-02-14" && r.type === "custom")}
               >
                 <Heart className="h-6 w-6 text-pink-500" />
                 <span className="font-medium">Valentine's Day</span>
@@ -572,7 +626,7 @@ export default function RemindersPage() {
                 variant="outline" 
                 className="h-auto p-4 flex flex-col items-center gap-2 bg-transparent"
                 onClick={() => addQuickReminder("Christmas", "2025-12-25", "custom")}
-                disabled={isSaving}
+                disabled={isSaving || reminders.some(r => r.title === "Christmas" && r.date === "2025-12-25" && r.type === "custom")}
               >
                 <Gift className="h-6 w-6 text-blue-500" />
                 <span className="font-medium">Christmas</span>
@@ -582,7 +636,7 @@ export default function RemindersPage() {
                 variant="outline" 
                 className="h-auto p-4 flex flex-col items-center gap-2 bg-transparent"
                 onClick={() => addQuickReminder("New Year", "2026-01-01", "custom")}
-                disabled={isSaving}
+                disabled={isSaving || reminders.some(r => r.title === "New Year" && r.date === "2026-01-01" && r.type === "custom")}
               >
                 <Calendar className="h-6 w-6 text-purple-500" />
                 <span className="font-medium">New Year</span>
